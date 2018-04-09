@@ -1,24 +1,13 @@
-import re
-import nltk
-from nltk.tokenize import RegexpTokenizer
-from nltk import bigrams, trigrams
 import math
-
-
-stopwords = nltk.corpus.stopwords.words('english')
-tokenizer = RegexpTokenizer("[\w’]+", flags=re.UNICODE)
 
 def freq(word, doc):
     return doc.count(word)
 
-
 def word_count(doc):
     return len(doc)
 
-
 def tf(word, doc):
     return (freq(word, doc) / float(word_count(doc)))
-
 
 def num_docs_containing(word, list_of_docs):
     count = 0
@@ -40,8 +29,10 @@ def tf_idf(word, doc, list_of_docs):
 vocabulary = []
 docs = {}
 all_tips = []
+
+#take te list of your documents 
 for tip in ([data, data_josy]):
-    tokens = tokenizer.tokenize(tip)
+    tokens = word_tokenize(tip)
 
 
     tokens = [token.lower() for token in tokens if len(token) > 2]

@@ -157,7 +157,6 @@ print(fdist_trigrams.most_common(10))
 # There might interesting to analyse the structure 
 # That means that we can analyse each word in the text and tag it by it's part-of-speech class (Conjunction, preposition, personal pronoun, verb etc.)  
 import nltk
-from nltk.tokenize import PunktSentenceTokenizer
 
 # We will analyse the structure of sentences
 sentences = nltk.sent_tokenize(data)  
@@ -198,13 +197,99 @@ tagdict = findtags('VB', sentencePunkt_bis)
 for tag in sorted(tagdict):
      print(tag, tagdict[tag])
 
+
+# =============================================================================
 # Next thing that will be interesting to analyse will be the TF-IDF index. As the name means it (Term frequency * Inverse document Frequency)
-# this index will compute the index of "importance" or the "meaninless" of a word in a corpus and a selection of documents.
+# This index will compute the index of "importance" or the "meaninless" of a word in a corpus and a selection of documents.
 # EX: In a selection of documents about comunism, the word "communism" will apear everywhere, but it does not mean that it is "interesting" to analyze it.
-# instead we will analyse the words that are specific for every document and not the enire corpus.
+# Instead we will analyse the words that are specific for every document and not the entire corpus.
+# Please find more information about tf-idf https://en.wikipedia.org/wiki/Tf%E2%80%93idf
+# However there is no dedicated function for tf-idf in the nltk package, and we have to create the functions by ourself.
+# I will provide however the way to do it but it's not the cleanest one, and by far, not the fastest one.
 
-data_josy = open(r"C:\Users\VictorVrabie\Speech_Josy.txt").read()     
 
+import math
+
+data_josy = open(r"C:\Users\VictorVrabie\Speech_Josy.txt").read()
+
+# Define the function we will use lates
+def freq(word, doc):
+    return doc.count(word)
+
+def word_count(doc):
+    return len(doc)
+
+def tf(word, doc):
+    return (freq(word, doc) / float(word_count(doc)))
+
+def num_docs_containing(word, list_of_docs):
+    count = 0
+    for document in list_of_docs:
+        if freq(word, document) > 0:
+            count += 1
+    return 1 + count
+
+
+def idf(word, list_of_docs):
+    return math.log(len(list_of_docs) /
+            float(num_docs_containing(word, list_of_docs)))
+
+def tf_idf(word, doc, list_of_docs):
+    return (tf(word, doc) * idf(word, list_of_docs))
+
+
+#Compute the frequency for each term.
+vocabulary = []
+docs = {}
+all_tips = []
+
+#take te list of your documents, tockenize and remove the stopwords
+for tip in ([data, data_josy]):
+    tokens = word_tokenize(tip)
+
+    tokens = [token.lower() for token in tokens if len(token) > 2]
+    tokens = [token for token in tokens if token not in stopwords]
+
+    final_tokens = []
+    final_tokens.extend(tokens)
+    docs[tip] = {'freq': {}, 'tf': {}, 'idf': {},
+                        'tf-idf': {}, 'tokens': []}
+    
+    
+    for token in final_tokens:
+        #The frequency computed for each tip
+        docs[tip]['freq'][token] = freq(token, final_tokens)
+        #The term-frequency (Normalized Frequency)
+        docs[tip]['tf'][token] = tf(token, final_tokens)
+        docs[tip]['tokens'] = final_tokens
+
+    vocabulary.append(final_tokens)
+
+# Compute the tf_idf
+for doc in docs:
+    for token in docs[doc]['tf']:
+        #The Inverse-Document-Frequency
+        docs[doc]['idf'][token] = idf(token, vocabulary)
+        #The tf-idf
+        docs[doc]['tf-idf'][token] = tf_idf(token, docs[doc]['tokens'], vocabulary)
+
+#Find out the most relevant words by tf-idf.
+words = {}
+for doc in docs:
+    for token in docs[doc]['tf-idf']:
+        if token not in words:
+            words[token] = docs[doc]['tf-idf'][token]
+        else:
+            if docs[doc]['tf-idf'][token] > words[token]:
+                words[token] = docs[doc]['tf-idf'][token]
+
+    print(doc)
+    for token in docs[doc]['tf-idf']:
+        print (token, docs[doc]['tf-idf'][token])
+
+for item in sorted(words.items(), key=lambda x: x[1], reverse=False):
+    print ("%f <= %s" % (item[1], item[0]))
+# =============================================================================
 
 # Using all this information we can provide a good descriptive analysis of a text.
 # However, the next stpe will be to analyse the sentiments and to work on text classification.
